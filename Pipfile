@@ -1,0 +1,22 @@
+[[source]]
+
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+
+[packages]
+
+numpy = ">=1.10.4"
+requests = ">=2.0"
+pyglet = ">=1.2.0"
+scipy = "==0.17.1"
+ptpython = "*"
+jupyter = "*"
+ipython = "*"
+keras = "*"
+tensorflow = "*"
+
+
+[dev-packages]
+
