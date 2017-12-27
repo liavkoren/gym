@@ -16,6 +16,7 @@ jupyter = "*"
 ipython = "*"
 keras = "*"
 tensorflow = "*"
+pdbpp = "*"
 
 
 [dev-packages]
