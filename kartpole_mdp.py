@@ -1,10 +1,9 @@
 import gym
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn import linear_model
 
 
-num_samples = 2000
+num_samples = 1000
 theta = np.zeros((4, 1))
 discount_rate = 0.9
 y = np.ones((num_samples, 1))
@@ -55,27 +54,19 @@ def fitted_value_iteration():
             y_temp.append(q_action)
         y[index] += max(y_temp)
 
-    theta_history = []
     theta = theta.T
-    for _ in range(2000):
+    num_iters = range(250)
+    for _ in num_iters:
         learning_rate = .95
         theta -= learning_rate*theta_grad(state_set).sum(axis=0)/num_samples
-        theta_history.append(theta)
     theta = theta.T
-    # plt.plot(theta_history)
-
-    '''
-    classifier = linear_model.LinearRegression()
-    classifier.fit(state_set, y)
-    return classifier
-    '''
 
 
 def go(solver):
-    for i_episode in range(20):
+    for i_episode in range(5):
         score = 0
         observation = env.reset()
-        for t in range(1000):
+        for t in range(100):
             env.render()
             action = solver.predict(observation.reshape((1, 4)))
             observation, reward, done, info = env.step(int(action[0, 0]))
@@ -89,10 +80,13 @@ def go(solver):
 if __name__ == '__main__':
     env = gym.make('CartPole-v1')
     env.reset()
-    for _ in range(20):
-        solver = fitted_value_iteration()
-        print('-'*20)
-    # print(f'Learned weights: {solver.coef_} intercept {solver.intercept_}')
-    # go(solver)
-    # print(f'Learned weights: {solver.coef_} intercept {solver.intercept_}')
+    theta_history = []
 
+    for _ in range(20):
+        theta_old = theta
+        solver = fitted_value_iteration()
+        theta_history.append(np.linalg.norm(theta - theta_old))
+        print('-'*20)
+
+    plt.plot(theta_history)
+    plt.show()
