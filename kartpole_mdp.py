@@ -3,7 +3,7 @@ import gym
 import numpy as np
 
 
-num_samples = 1600
+num_samples = 200
 theta = np.zeros((5, 1))
 discount_rate = 0.9
 y = np.ones((num_samples, 1))
@@ -32,8 +32,6 @@ def theta_grad(s):
 
 def fitted_value_iteration():
     global theta
-
-
     state_set = np.random.uniform(-sample_bounds, sample_bounds, size=(num_samples, 4))
     bias = np.ones((num_samples, 1))
     state_set = np.concatenate([state_set, bias], axis=1)
@@ -44,7 +42,7 @@ def fitted_value_iteration():
             # Nearest Neigh calc:
             diffs = np.linalg.norm(state_set[:, :4] - state_prime, axis=1)
             sort_indicies = np.argsort(diffs)
-            neighbors_list = state_set[sort_indicies[:3], :]
+            neighbors_list = state_set[sort_indicies[:3]]
             q_action = 0
             if not done:
                 for neighbor in neighbors_list:
@@ -57,34 +55,45 @@ def fitted_value_iteration():
             y_temp.append(q_action)
         y[index] += max(y_temp)
 
+    # SGD:
     theta = theta.T
-    num_iters = range(1000)
+    num_iters = range(2000)
+    # import pdb; pdb.set_trace()
     for _ in num_iters:
-        learning_rate = .95
+        learning_rate = .9
         param_scale = np.linalg.norm(theta.ravel())
-        update = -learning_rate * theta_grad(state_set).sum(axis=0)/num_samples
+
+        fs_minus_y = (theta.dot(state_set.T).T - y)
+        theta_grad = (fs_minus_y * state_set).sum(axis=0, keepdims=True)
+        bias_grad = fs_minus_y.sum(axis=0, keepdims=True)
+        update = theta_grad
+        update[:, -1] = bias_grad
+        update /= num_samples
+        theta -= learning_rate*update
+
         update_scale = np.linalg.norm(update.ravel())
-        theta += learning_rate*update
-        print(f'update scale: {update_scale/param_scale} (should be ~10^-3)')
+        print(f'theta: {theta},  update scale: {update_scale/param_scale} (should be ~10^-3)')
     theta = theta.T
 
-    accuracy = np.mean((state_set.dot(theta) - y) < 1e-3)
+    accuracy = np.mean(np.abs(state_set.dot(theta) - y))
+    print(f'{np.abs(state_set.dot(theta) - y)}')
     print(f'Acc: {accuracy}')
 
+
+
+'''
 def go(solver):
-    for i_episode in range(5):
-        score = 0
+    for i_episode in range(1):
         observation = env.reset()
         for t in range(100):
             env.render()
             action = solver.predict(observation.reshape((1, 4)))
             observation, reward, done, info = env.step(int(action[0, 0]))
-            score += reward
             if done:
                 print(f'Episode finished after {t+1} time steps.')
                 break
         print(f'{i_episode}')
-
+'''
 
 if __name__ == '__main__':
     env = gym.make('CartPole-v1')
