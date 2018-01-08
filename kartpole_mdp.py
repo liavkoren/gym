@@ -1,13 +1,14 @@
 import gym
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 
 
-num_samples = 1000
-theta = np.zeros((4, 1))
+num_samples = 1600
+theta = np.zeros((5, 1))
 discount_rate = 0.9
 y = np.ones((num_samples, 1))
 state_set = np.zeros((num_samples, 4))
+sample_bounds = 0.35
 
 
 def feature_map(state):
@@ -20,7 +21,7 @@ def value(state):
 
 def move(state, direction):
     env.reset()
-    env.env.state = state
+    env.env.state = state[:4]
     state, reward, done, _ = env.step(direction)
     return state, done
 
@@ -31,15 +32,17 @@ def theta_grad(s):
 
 def fitted_value_iteration():
     global theta
-    sample_bounds = 0.35
+
 
     state_set = np.random.uniform(-sample_bounds, sample_bounds, size=(num_samples, 4))
-    print('---')
+    bias = np.ones((num_samples, 1))
+    state_set = np.concatenate([state_set, bias], axis=1)
     for index, sample in enumerate(state_set):
         y_temp = []
         for action in [0, 1]:
             state_prime, done = move(sample, action)
-            diffs = np.linalg.norm(state_set - state_prime, axis=1)
+            # Nearest Neigh calc:
+            diffs = np.linalg.norm(state_set[:, :4] - state_prime, axis=1)
             sort_indicies = np.argsort(diffs)
             neighbors_list = state_set[sort_indicies[:3], :]
             q_action = 0
@@ -55,12 +58,18 @@ def fitted_value_iteration():
         y[index] += max(y_temp)
 
     theta = theta.T
-    num_iters = range(250)
+    num_iters = range(1000)
     for _ in num_iters:
         learning_rate = .95
-        theta -= learning_rate*theta_grad(state_set).sum(axis=0)/num_samples
+        param_scale = np.linalg.norm(theta.ravel())
+        update = -learning_rate * theta_grad(state_set).sum(axis=0)/num_samples
+        update_scale = np.linalg.norm(update.ravel())
+        theta += learning_rate*update
+        print(f'update scale: {update_scale/param_scale} (should be ~10^-3)')
     theta = theta.T
 
+    accuracy = np.mean((state_set.dot(theta) - y) < 1e-3)
+    print(f'Acc: {accuracy}')
 
 def go(solver):
     for i_episode in range(5):
@@ -80,13 +89,13 @@ def go(solver):
 if __name__ == '__main__':
     env = gym.make('CartPole-v1')
     env.reset()
-    theta_history = []
 
-    for _ in range(20):
-        theta_old = theta
-        solver = fitted_value_iteration()
-        theta_history.append(np.linalg.norm(theta - theta_old))
-        print('-'*20)
+    for _ in range(1):
+        fitted_value_iteration()
 
-    plt.plot(theta_history)
-    plt.show()
+    # Make a test set:
+    test_set_size = 400
+    state_set = np.random.uniform(-sample_bounds, sample_bounds, size=(test_set_size, 4))
+    bias = np.ones((test_set_size, 1))
+    test_set = np.concatenate([state_set, bias], axis=1)
+    y_test = []
