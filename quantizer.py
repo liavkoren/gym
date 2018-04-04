@@ -55,7 +55,8 @@ class Quantizer(object):
             else:
                 state_val = dim_box * self.width[idx] + self.low[idx] + self.width[idx]/2
                 state.append(state_val)
-        assert self.quantize(state) == quant_tuple, f'computed state {state} does not match given tuple, expected {quant_tuple}, go {self.quantize(state)}'
+
+        assert self.quantize(state) == quant_tuple, f'computed state {state} does not match given tuple, expected {quant_tuple}, got {self.quantize(state)}'
         return tuple(state)
 
 
